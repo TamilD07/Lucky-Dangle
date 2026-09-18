@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { ANDROID_PROJECT_FILES } from '../../data/androidFiles';
+import { GRADLE_WRAPPER_JAR_BASE64 } from '../../data/androidWrapperJarBase64';
 
 interface AndroidOverlayGuideViewProps {
   onBack?: () => void;
@@ -37,6 +38,7 @@ export const AndroidOverlayGuideView: React.FC<AndroidOverlayGuideViewProps> = (
       for (const file of ANDROID_PROJECT_FILES) {
         zip.file(file.path, file.content);
       }
+      zip.file('gradle/wrapper/gradle-wrapper.jar', GRADLE_WRAPPER_JAR_BASE64, { base64: true });
       zip.file(
         'README.md',
         `# Lucky Dangle - Native Android System Overlay Application

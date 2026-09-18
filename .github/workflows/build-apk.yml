@@ -24,21 +24,32 @@ jobs:
 
       - name: Ensure Gradle Wrapper
         working-directory: ./android
+        shell: bash
         run: |
+          set -euo pipefail
+
+          wrapper_jar="gradle/wrapper/gradle-wrapper.jar"
+          expected_class="org/gradle/wrapper/GradleWrapperMain.class"
+
           mkdir -p gradle/wrapper
-          # If gradle-wrapper.jar is missing or 0 bytes, download it from official Gradle GitHub release
-          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ] || [ ! -s "gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "gradle-wrapper.jar missing or empty. Downloading official Gradle wrapper jar..."
-            curl -sSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar || \
-            curl -sSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+
+          if [ ! -f "$wrapper_jar" ] || \
+             ! unzip -l "$wrapper_jar" 2>/dev/null | grep -q "$expected_class"; then
+            echo "Invalid or missing Gradle wrapper JAR; downloading a valid copy..."
+
+            curl --fail --silent --show-error --location \
+              --retry 3 \
+              --output "$wrapper_jar" \
+              "https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar"
           fi
-          chmod +x gradlew
-          ls -lh gradle/wrapper/
+
+          unzip -l "$wrapper_jar" | grep "$expected_class"
+          chmod +x ./gradlew
+          ./gradlew --version
 
       - name: Build Debug APK
         working-directory: ./android
-        run: |
-          ./gradlew assembleDebug --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
