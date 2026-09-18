@@ -12,9 +12,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.screendangle.app.overlay.OverlayService
+import androidx.compose.ui.graphics.Color
+import com.screendangle.app.ui.ScreenDangleScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -32,12 +34,21 @@ class MainActivity : ComponentActivity() {
         hasOverlayPermission = checkOverlayPermission()
 
         setContent {
-            MaterialTheme {
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    background = Color(0xFF0D0F12),
+                    surface = Color(0xFF181C22),
+                    primary = Color(0xFFF59E0B)
+                )
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Jetpack Compose Screen Dangle Main UI
+                    ScreenDangleScreen(
+                        hasOverlayPermission = hasOverlayPermission,
+                        onRequestOverlayPermission = { requestOverlayPermission() }
+                    )
                 }
             }
         }

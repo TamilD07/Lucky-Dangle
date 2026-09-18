@@ -104,6 +104,11 @@ class OverlayService : Service() {
                 windowManager?.addView(overlayView, params)
             } catch (e: Exception) {
                 stopSelf()
+                return@launch
+            }
+
+            preferences.settingsFlow.collect { updatedSettings ->
+                overlayView?.applySettings(updatedSettings)
             }
         }
     }

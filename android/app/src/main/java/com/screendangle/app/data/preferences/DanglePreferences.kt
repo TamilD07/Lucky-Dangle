@@ -48,6 +48,22 @@ class DanglePreferences(private val context: Context) {
         context.dataStore.edit { it[HORIZONTAL_PERCENT] = percent }
     }
 
+    suspend fun setRopeLength(length: Float) {
+        context.dataStore.edit { it[ROPE_LENGTH] = length }
+    }
+
+    suspend fun setCharmSize(size: Int) {
+        context.dataStore.edit { it[CHARM_SIZE] = size }
+    }
+
+    suspend fun setSwingIntensity(intensity: Float) {
+        context.dataStore.edit { it[SWING_INTENSITY] = intensity }
+    }
+
+    suspend fun setReduceMotion(reduce: Boolean) {
+        context.dataStore.edit { it[REDUCE_MOTION] = reduce }
+    }
+
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { it[ONBOARDING_COMPLETED] = completed }
     }
