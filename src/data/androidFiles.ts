@@ -623,7 +623,7 @@ fun ScreenDangleScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -669,7 +669,7 @@ fun ScreenDangleScreen(
                         )
 
                         Column(
-                            horizontalAlignment = Alignment.CenterVertically,
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .offset(y = 4.dp)
                                 .rotate(animatedAngle)
@@ -766,7 +766,7 @@ fun ScreenDangleScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(12.dp),
-                                horizontalAlignment = Alignment.CenterVertically
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Box(
                                     modifier = Modifier
