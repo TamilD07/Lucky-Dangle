@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Do not ignore Gradle wrapper JAR
+!*.jar
+!gradle-wrapper.jar
+!android/gradle/wrapper/gradle-wrapper.jar
