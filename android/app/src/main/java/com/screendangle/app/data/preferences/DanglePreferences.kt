@@ -21,18 +21,32 @@ class DanglePreferences(private val context: Context) {
         val HORIZONTAL_PERCENT = floatPreferencesKey("horizontal_percent")
         val REDUCE_MOTION = booleanPreferencesKey("reduce_motion")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val TOUCH_PASSTHROUGH = booleanPreferencesKey("touch_passthrough")
+        val STRING_MATERIAL_ID = stringPreferencesKey("string_material_id")
+        val STRING_THICKNESS = floatPreferencesKey("string_thickness")
+        val GRAVITY = floatPreferencesKey("gravity")
+        val DAMPING = floatPreferencesKey("damping")
+        val STIFFNESS = floatPreferencesKey("stiffness")
+        val CUSTOM_CHARMS_JSON = stringPreferencesKey("custom_charms_json")
     }
 
     val settingsFlow: Flow<DangleSettingsModel> = context.dataStore.data.map { prefs ->
         DangleSettingsModel(
             isEnabled = prefs[IS_ENABLED] ?: false,
-            selectedCharmId = prefs[SELECTED_CHARM_ID] ?: "evil_eye",
-            ropeLength = prefs[ROPE_LENGTH] ?: 130f,
+            selectedCharmId = prefs[SELECTED_CHARM_ID] ?: "daruma",
+            ropeLength = prefs[ROPE_LENGTH] ?: 135f,
             charmSize = prefs[CHARM_SIZE] ?: 56,
             swingIntensity = prefs[SWING_INTENSITY] ?: 1.0f,
             horizontalPercent = prefs[HORIZONTAL_PERCENT] ?: 0.72f,
             reduceMotion = prefs[REDUCE_MOTION] ?: false,
-            onboardingCompleted = prefs[ONBOARDING_COMPLETED] ?: false
+            onboardingCompleted = prefs[ONBOARDING_COMPLETED] ?: false,
+            touchPassthrough = prefs[TOUCH_PASSTHROUGH] ?: false,
+            stringMaterialId = prefs[STRING_MATERIAL_ID] ?: "gold",
+            stringThickness = prefs[STRING_THICKNESS] ?: 2.4f,
+            gravity = prefs[GRAVITY] ?: 9.8f,
+            damping = prefs[DAMPING] ?: 0.982f,
+            stiffness = prefs[STIFFNESS] ?: 0.15f,
+            customCharmsJson = prefs[CUSTOM_CHARMS_JSON] ?: ""
         )
     }
 
@@ -66,5 +80,56 @@ class DanglePreferences(private val context: Context) {
 
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { it[ONBOARDING_COMPLETED] = completed }
+    }
+
+    suspend fun setTouchPassthrough(enabled: Boolean) {
+        context.dataStore.edit { it[TOUCH_PASSTHROUGH] = enabled }
+    }
+
+    suspend fun setStringMaterialId(materialId: String) {
+        context.dataStore.edit { it[STRING_MATERIAL_ID] = materialId }
+    }
+
+    suspend fun setStringThickness(thickness: Float) {
+        context.dataStore.edit { it[STRING_THICKNESS] = thickness }
+    }
+
+    suspend fun setGravity(gravity: Float) {
+        context.dataStore.edit { it[GRAVITY] = gravity }
+    }
+
+    suspend fun setDamping(damping: Float) {
+        context.dataStore.edit { it[DAMPING] = damping }
+    }
+
+    suspend fun setStiffness(stiffness: Float) {
+        context.dataStore.edit { it[STIFFNESS] = stiffness }
+    }
+
+    suspend fun setCustomCharmsJson(json: String) {
+        context.dataStore.edit { it[CUSTOM_CHARMS_JSON] = json }
+    }
+
+    suspend fun addCustomCharm(charm: com.screendangle.app.data.model.Charm) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[CUSTOM_CHARMS_JSON] ?: "[]"
+            val currentList = com.screendangle.app.data.model.CharmCatalog.parseCustomCharms(currentJson).toMutableList()
+            currentList.removeAll { it.id == charm.id }
+            currentList.add(0, charm)
+            prefs[CUSTOM_CHARMS_JSON] = com.screendangle.app.data.model.CharmCatalog.encodeCustomCharms(currentList)
+            prefs[SELECTED_CHARM_ID] = charm.id
+        }
+    }
+
+    suspend fun deleteCustomCharm(charmId: String) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[CUSTOM_CHARMS_JSON] ?: "[]"
+            val currentList = com.screendangle.app.data.model.CharmCatalog.parseCustomCharms(currentJson).toMutableList()
+            currentList.removeAll { it.id == charmId }
+            prefs[CUSTOM_CHARMS_JSON] = com.screendangle.app.data.model.CharmCatalog.encodeCustomCharms(currentList)
+            if (prefs[SELECTED_CHARM_ID] == charmId) {
+                prefs[SELECTED_CHARM_ID] = com.screendangle.app.data.model.CharmCatalog.BUILT_IN_CHARMS[0].id
+            }
+        }
     }
 }

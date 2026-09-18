@@ -27,6 +27,7 @@ class OverlayService : Service() {
     private var overlayView: DangleOverlayView? = null
     private var sensorManager: MotionSensorManager? = null
     private lateinit var preferences: DanglePreferences
+    private var windowParams: WindowManager.LayoutParams? = null
 
     companion object {
         const val ACTION_STOP_OVERLAY = "com.screendangle.app.ACTION_STOP"
@@ -72,6 +73,39 @@ class OverlayService : Service() {
         return START_STICKY
     }
 
+    private fun configureLayoutParams(settings: com.screendangle.app.data.model.DangleSettingsModel, params: WindowManager.LayoutParams) {
+        val density = resources.displayMetrics.density
+        val screenWidth = resources.displayMetrics.widthPixels
+
+        if (settings.touchPassthrough) {
+            // Complete Ghost / Pass-through mode: touches 100% pass to background
+            params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            params.width = WindowManager.LayoutParams.MATCH_PARENT
+            params.height = ((settings.ropeLength + settings.charmSize + 55f) * density).toInt()
+            params.x = 0
+            params.y = 0
+            overlayView?.setIsLocalizedWindow(false)
+        } else {
+            // Interactive mode: Window only wraps charm's compact bounding box!
+            // Touches outside this compact area pass straight to underlying apps.
+            params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            val boxWidth = ((settings.charmSize + 110f) * density).toInt()
+            val boxHeight = ((settings.ropeLength + settings.charmSize + 55f) * density).toInt()
+            params.width = boxWidth
+            params.height = boxHeight
+            val centerX = screenWidth * settings.horizontalPercent
+            params.x = (centerX - boxWidth / 2f).toInt().coerceIn(0, (screenWidth - boxWidth).coerceAtLeast(0))
+            params.y = 0
+            overlayView?.setIsLocalizedWindow(true)
+        }
+    }
+
     private fun setupOverlayView() {
         serviceScope.launch {
             val settings = preferences.settingsFlow.first()
@@ -87,6 +121,7 @@ class OverlayService : Service() {
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 layoutType,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                         WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT
@@ -100,6 +135,9 @@ class OverlayService : Service() {
                 applySettings(settings)
             }
 
+            configureLayoutParams(settings, params)
+            windowParams = params
+
             try {
                 windowManager?.addView(overlayView, params)
             } catch (e: Exception) {
@@ -108,7 +146,13 @@ class OverlayService : Service() {
             }
 
             preferences.settingsFlow.collect { updatedSettings ->
-                overlayView?.applySettings(updatedSettings)
+                windowParams?.let { p ->
+                    configureLayoutParams(updatedSettings, p)
+                    overlayView?.applySettings(updatedSettings)
+                    try {
+                        windowManager?.updateViewLayout(overlayView, p)
+                    } catch (_: Exception) {}
+                }
             }
         }
     }

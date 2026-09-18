@@ -10,6 +10,7 @@ import com.screendangle.app.data.model.Charm
 import com.screendangle.app.data.model.CharmCatalog
 import com.screendangle.app.data.model.CharmType
 import com.screendangle.app.data.model.DangleSettingsModel
+import com.screendangle.app.data.model.StringMaterialsCatalog
 import com.screendangle.app.physics.PendulumPhysicsEngine
 
 /**
@@ -25,10 +26,17 @@ class DangleOverlayView(context: Context) : View(context) {
     private var topOffsetPx = 0f
     private var charmSizePx = 56f * resources.displayMetrics.density
     private var currentCharm: Charm = CharmCatalog.BUILT_IN_CHARMS[0]
+    private var currentSettings: DangleSettingsModel? = null
     private var lastFrameNanos: Long = 0L
 
+    private var isLocalizedWindow: Boolean = false
     private var isDraggingCharm = false
     private var isDraggingAnchor = false
+
+    fun setIsLocalizedWindow(localized: Boolean) {
+        isLocalizedWindow = localized
+        invalidate()
+    }
 
     // Ritual States
     var darumaLeftEyeInked = false
@@ -92,16 +100,26 @@ class DangleOverlayView(context: Context) : View(context) {
     private val ropePath = Path()
 
     fun applySettings(settings: DangleSettingsModel) {
+        currentSettings = settings
         val density = resources.displayMetrics.density
         anchorPercent = settings.horizontalPercent
         charmSizePx = settings.charmSize * density
         physicsEngine.setRopeLength(settings.ropeLength * density)
-        currentCharm = CharmCatalog.getCharmById(settings.selectedCharmId)
+        currentCharm = CharmCatalog.getCharmById(settings.selectedCharmId, settings.customCharmsJson)
 
+        // 1. String material colors & thickness
         try {
-            ropePaint.color = Color.parseColor(currentCharm.cordColorHex)
+            val material = StringMaterialsCatalog.getMaterialById(settings.stringMaterialId)
+            ropePaint.color = Color.parseColor(material.colorHex)
+            ropePaint.strokeWidth = settings.stringThickness * density
+            ropeSheenPaint.color = Color.parseColor(material.sheenHex)
+            ropeShadowPaint.color = Color.parseColor(material.shadowHex)
         } catch (_: Exception) {
-            ropePaint.color = Color.parseColor("#61451F")
+            try {
+                ropePaint.color = Color.parseColor(currentCharm.cordColorHex)
+            } catch (_: Exception) {
+                ropePaint.color = Color.parseColor("#61451F")
+            }
         }
 
         invalidate()
@@ -136,11 +154,24 @@ class DangleOverlayView(context: Context) : View(context) {
         val dt = if (lastFrameNanos == 0L) 0.016f else ((currentNanos - lastFrameNanos) / 1_000_000_000f)
         lastFrameNanos = currentNanos
 
-        // Step physics simulation
-        physicsEngine.step(dt)
+        // Step physics simulation with customized wave & structure parameters
+        val cfg = currentSettings
+        val gravityVal = cfg?.gravity ?: 9.8f
+        val dampingVal = if (cfg?.reduceMotion == true) 0.93f else (cfg?.damping ?: 0.982f)
+        val swingIntensityVal = cfg?.swingIntensity ?: 1.0f
+        val reduceMotionVal = cfg?.reduceMotion ?: false
+
+        physicsEngine.step(
+            dt = dt,
+            gravity = gravityVal,
+            damping = dampingVal,
+            swingIntensity = swingIntensityVal,
+            movementResponse = swingIntensityVal * 1.2f,
+            reduceMotion = reduceMotionVal
+        )
 
         val density = resources.displayMetrics.density
-        val anchorX = width * anchorPercent
+        val anchorX = if (isLocalizedWindow) width / 2f else width * anchorPercent
         val anchorY = topOffsetPx
         val mountEyeletY = anchorY + 5.5f * density
 
@@ -339,6 +370,43 @@ class DangleOverlayView(context: Context) : View(context) {
             }
         }
 
+        // Emoji Charm
+        if (currentCharm.type == CharmType.EMOJI && !currentCharm.emoji.isNullOrBlank()) {
+            val emojiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = size * 0.72f
+                textAlign = Paint.Align.CENTER
+            }
+            val textY = (size * 0.65f) - ((emojiPaint.descent() + emojiPaint.ascent()) / 2f)
+            canvas.drawText(currentCharm.emoji ?: "🧿", 0f, textY, emojiPaint)
+            return
+        }
+
+        // Custom Text / Sigil Charm Medallion
+        if (currentCharm.type == CharmType.TEXT && !currentCharm.text.isNullOrBlank()) {
+            val radius = size / 2f
+            val density = resources.displayMetrics.density
+            val pendantPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = try { Color.parseColor(currentCharm.accentColorHex) } catch (_: Exception) { Color.parseColor("#4F46E5") }
+                style = Paint.Style.FILL
+            }
+            val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = try { Color.parseColor(currentCharm.secondaryColorHex) } catch (_: Exception) { Color.parseColor("#FBBF24") }
+                strokeWidth = 2.4f * density
+                style = Paint.Style.STROKE
+            }
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = (size * 0.28f).coerceAtLeast(12f * density)
+                typeface = Typeface.DEFAULT_BOLD
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawCircle(0f, radius, radius, pendantPaint)
+            canvas.drawCircle(0f, radius, radius - 1.5f * density, borderPaint)
+            val textY = radius - ((textPaint.descent() + textPaint.ascent()) / 2f)
+            canvas.drawText(currentCharm.text ?: "", 0f, textY, textPaint)
+            return
+        }
+
         // Fallback Vector / Geometric evil eye
         val radius = charmSizePx / 2f
         charmPaint.color = Color.parseColor("#1D4ED8")
@@ -392,15 +460,16 @@ class DangleOverlayView(context: Context) : View(context) {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val anchorX = width * anchorPercent
+        val density = resources.displayMetrics.density
+        val anchorX = if (isLocalizedWindow) width / 2f else width * anchorPercent
         val anchorY = topOffsetPx
         val touchRelX = event.x - anchorX
         val touchRelY = event.y - anchorY
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                // 1. Check if dragging anchor along top bezel
-                if (event.y < 32f * resources.displayMetrics.density && Math.abs(event.x - anchorX) < 40f * resources.displayMetrics.density) {
+                // 1. Check if dragging anchor along top bezel (only in full width mode)
+                if (!isLocalizedWindow && event.y < 32f * density && Math.abs(event.x - anchorX) < 40f * density) {
                     isDraggingAnchor = true
                     return true
                 }

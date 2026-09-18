@@ -1,6 +1,8 @@
 package com.screendangle.app.data.model
 
 import com.screendangle.app.R
+import org.json.JSONArray
+import org.json.JSONObject
 
 enum class CharmCategory {
     TRADITIONAL, PROTECTION, LUCKY, CUTE, MINIMAL, CUSTOM
@@ -38,6 +40,31 @@ data class Charm(
     val secondaryColorHex: String = "#D4AF37"
 )
 
+data class StringMaterialItem(
+    val id: String,
+    val name: String,
+    val colorHex: String,
+    val sheenHex: String,
+    val shadowHex: String,
+    val defaultWidth: Float = 2.4f
+)
+
+object StringMaterialsCatalog {
+    val MATERIALS = listOf(
+        StringMaterialItem("gold", "Gilded Kumihimo", "#D4AF37", "#FEF08A", "#78350F", 2.4f),
+        StringMaterialItem("redSilk", "Imperial Red Silk", "#DC2626", "#FCA5A5", "#7F1D1D", 2.2f),
+        StringMaterialItem("midnight", "Obsidian & Onyx", "#1E293B", "#94A3B8", "#090D16", 2.4f),
+        StringMaterialItem("jute", "Artisan Flax Twine", "#B45309", "#FDE68A", "#451A03", 2.6f),
+        StringMaterialItem("indigo", "Edo Indigo Cord", "#3730A3", "#818CF8", "#1E1B4B", 2.2f),
+        StringMaterialItem("silver", "Sterling Silver Thread", "#CBD5E1", "#FFFFFF", "#475569", 2.0f),
+        StringMaterialItem("roseGold", "Rose Gold Filigree", "#E11D48", "#FECDD3", "#881337", 2.2f)
+    )
+
+    fun getMaterialById(id: String): StringMaterialItem {
+        return MATERIALS.find { it.id == id } ?: MATERIALS[0]
+    }
+}
+
 data class PhysicsConfig(
     val gravity: Float = 9.8f,
     val damping: Float = 0.982f,
@@ -59,7 +86,14 @@ data class DangleSettingsModel(
     val horizontalPercent: Float = 0.72f,
     val reduceMotion: Boolean = false,
     val soundEnabled: Boolean = true,
-    val onboardingCompleted: Boolean = false
+    val onboardingCompleted: Boolean = false,
+    val touchPassthrough: Boolean = false,
+    val stringMaterialId: String = "gold",
+    val stringThickness: Float = 2.4f,
+    val gravity: Float = 9.8f,
+    val damping: Float = 0.982f,
+    val stiffness: Float = 0.15f,
+    val customCharmsJson: String = ""
 )
 
 object CharmCatalog {
@@ -223,7 +257,64 @@ object CharmCatalog {
         )
     )
 
-    fun getCharmById(id: String): Charm {
-        return BUILT_IN_CHARMS.find { it.id == id } ?: BUILT_IN_CHARMS[0]
+    fun parseCustomCharms(json: String?): List<Charm> {
+        if (json.isNullOrBlank()) return emptyList()
+        val list = mutableListOf<Charm>()
+        try {
+            val array = JSONArray(json)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                val typeStr = obj.optString("type", "EMOJI")
+                val type = try { CharmType.valueOf(typeStr) } catch (_: Exception) { CharmType.EMOJI }
+                list.add(
+                    Charm(
+                        id = obj.getString("id"),
+                        name = obj.optString("name", "Custom Charm"),
+                        origin = obj.optString("origin", "Custom"),
+                        category = CharmCategory.CUSTOM,
+                        type = type,
+                        description = obj.optString("description", "Personal talisman"),
+                        ritualText = obj.optString("ritualText", "Swing for good luck"),
+                        ritualKind = "custom",
+                        cordColorHex = obj.optString("cordColorHex", "#D4AF37"),
+                        emoji = if (obj.has("emoji")) obj.getString("emoji") else null,
+                        text = if (obj.has("text")) obj.getString("text") else null,
+                        accentColorHex = obj.optString("accentColorHex", "#4F46E5"),
+                        secondaryColorHex = obj.optString("secondaryColorHex", "#FBBF24")
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+        return list
+    }
+
+    fun encodeCustomCharms(charms: List<Charm>): String {
+        val array = JSONArray()
+        for (charm in charms) {
+            val obj = JSONObject()
+            obj.put("id", charm.id)
+            obj.put("name", charm.name)
+            obj.put("origin", charm.origin)
+            obj.put("type", charm.type.name)
+            obj.put("description", charm.description)
+            obj.put("ritualText", charm.ritualText)
+            obj.put("cordColorHex", charm.cordColorHex)
+            charm.emoji?.let { obj.put("emoji", it) }
+            charm.text?.let { obj.put("text", it) }
+            obj.put("accentColorHex", charm.accentColorHex)
+            obj.put("secondaryColorHex", charm.secondaryColorHex)
+            array.put(obj)
+        }
+        return array.toString()
+    }
+
+    fun getAllCharms(customCharmsJson: String? = null): List<Charm> {
+        val custom = parseCustomCharms(customCharmsJson)
+        return BUILT_IN_CHARMS + custom
+    }
+
+    fun getCharmById(id: String, customCharmsJson: String? = null): Charm {
+        val all = getAllCharms(customCharmsJson)
+        return all.find { it.id == id } ?: BUILT_IN_CHARMS[0]
     }
 }
