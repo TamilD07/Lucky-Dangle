@@ -1,0 +1,7 @@
+{
+  "name": "Lucky Dangle",
+  "description": "Tactile hanging screen charms with realistic pendulum physics, authentic world folklore, interactive rituals, and floating Android overlay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

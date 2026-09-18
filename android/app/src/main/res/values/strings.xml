@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Screen Dangle</string>
+    <string name="notification_channel_name">Screen Dangle Active</string>
+    <string name="notification_channel_description">Shows status notification when virtual charm overlay is active above apps.</string>
+    <string name="notification_title">Screen Dangle is active</string>
+    <string name="notification_text">Your screen charm is hanging peacefully from the top bezel.</string>
+    <string name="action_turn_off">Turn Off</string>
+    <string name="permission_overlay_explanation">Screen Dangle needs permission to display your selected charm above other apps. It does not read, record, or control the content of other apps.</string>
+</resources>
