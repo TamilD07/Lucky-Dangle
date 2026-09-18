@@ -28,6 +28,17 @@ jobs:
         run: |
           set -euo pipefail
 
+          # 1. Ensure gradlew is the complete, official Gradle wrapper script with APP_HOME resolution
+          if [ ! -f "gradlew" ] || ! grep -q "APP_HOME=" gradlew; then
+            echo "gradlew is missing or incomplete; downloading official Gradle wrapper script..."
+            curl --fail --silent --show-error --location \
+              --retry 3 \
+              --output gradlew \
+              "https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradlew"
+          fi
+          chmod +x ./gradlew
+
+          # 2. Ensure gradle-wrapper.jar exists and contains org/gradle/wrapper/GradleWrapperMain.class
           wrapper_jar="gradle/wrapper/gradle-wrapper.jar"
           expected_class="org/gradle/wrapper/GradleWrapperMain.class"
 
@@ -44,7 +55,6 @@ jobs:
           fi
 
           unzip -l "$wrapper_jar" | grep "$expected_class"
-          chmod +x ./gradlew
           ./gradlew --version
 
       - name: Build Debug APK
