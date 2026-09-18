@@ -73,6 +73,9 @@ fun ScreenDangleScreen(
     val selectedCharm = remember(settings.selectedCharmId, settings.customCharmsJson) {
         CharmCatalog.getCharmById(settings.selectedCharmId, settings.customCharmsJson)
     }
+    val selectedMaterial = remember(settings.stringMaterialId) {
+        StringMaterialsCatalog.getMaterialById(settings.stringMaterialId)
+    }
 
     // Local preview swing angle
     var previewTilt by remember { mutableFloatStateOf(0f) }
@@ -437,9 +440,8 @@ fun ScreenDangleScreen(
                                 .rotate(animatedAngle)
                         ) {
                             // Cord
-                            val material = StringMaterialsCatalog.getMaterialById(settings.stringMaterialId)
                             val cordColor = try {
-                                Color(android.graphics.Color.parseColor(material.colorHex))
+                                Color(android.graphics.Color.parseColor(selectedMaterial.colorHex))
                             } catch (_: Exception) {
                                 amber
                             }
@@ -494,7 +496,7 @@ fun ScreenDangleScreen(
 
                         // Bottom status text
                         Text(
-                            text = "${selectedCharm.name} (${selectedCharm.origin}) • ${material.name}",
+                            text = "${selectedCharm.name} (${selectedCharm.origin}) • ${selectedMaterial.name}",
                             fontSize = 11.sp,
                             color = Color(0xFF9CA3AF),
                             modifier = Modifier

@@ -43,6 +43,7 @@ data class Charm(
 data class StringMaterialItem(
     val id: String,
     val name: String,
+    val description: String = "",
     val colorHex: String,
     val sheenHex: String,
     val shadowHex: String,
@@ -51,13 +52,13 @@ data class StringMaterialItem(
 
 object StringMaterialsCatalog {
     val MATERIALS = listOf(
-        StringMaterialItem("gold", "Gilded Kumihimo", "#D4AF37", "#FEF08A", "#78350F", 2.4f),
-        StringMaterialItem("redSilk", "Imperial Red Silk", "#DC2626", "#FCA5A5", "#7F1D1D", 2.2f),
-        StringMaterialItem("midnight", "Obsidian & Onyx", "#1E293B", "#94A3B8", "#090D16", 2.4f),
-        StringMaterialItem("jute", "Artisan Flax Twine", "#B45309", "#FDE68A", "#451A03", 2.6f),
-        StringMaterialItem("indigo", "Edo Indigo Cord", "#3730A3", "#818CF8", "#1E1B4B", 2.2f),
-        StringMaterialItem("silver", "Sterling Silver Thread", "#CBD5E1", "#FFFFFF", "#475569", 2.0f),
-        StringMaterialItem("roseGold", "Rose Gold Filigree", "#E11D48", "#FECDD3", "#881337", 2.2f)
+        StringMaterialItem("gold", "Gilded Kumihimo", "Metallic twisted gold weave", "#D4AF37", "#FEF08A", "#78350F", 2.4f),
+        StringMaterialItem("redSilk", "Imperial Red Silk", "Traditional crimson woven silk", "#DC2626", "#FCA5A5", "#7F1D1D", 2.2f),
+        StringMaterialItem("midnight", "Obsidian & Onyx", "Deep midnight satin cord", "#1E293B", "#94A3B8", "#090D16", 2.4f),
+        StringMaterialItem("jute", "Artisan Flax Twine", "Earthy rustic organic thread", "#B45309", "#FDE68A", "#451A03", 2.6f),
+        StringMaterialItem("indigo", "Edo Indigo Cord", "Japanese dyed indigo strand", "#3730A3", "#818CF8", "#1E1B4B", 2.2f),
+        StringMaterialItem("silver", "Sterling Silver Thread", "Luminous polished silver wire", "#CBD5E1", "#FFFFFF", "#475569", 2.0f),
+        StringMaterialItem("roseGold", "Rose Gold Filigree", "Warm blush copper-gold braid", "#E11D48", "#FECDD3", "#881337", 2.2f)
     )
 
     fun getMaterialById(id: String): StringMaterialItem {
