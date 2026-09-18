@@ -384,6 +384,8 @@ class PendulumPhysicsEngine(
         private set
     var currentLengthPx: Float = naturalLengthPx
         private set
+    val ropeLength: Float
+        get() = currentLengthPx
 
     var isDragging: Boolean = false
         private set
@@ -881,6 +883,40 @@ class PendulumPhysicsEngineTest {
         engine.applyImpulse(5f)
         engine.step(0.016f, reduceMotion = true)
         assertTrue(kotlin.math.abs(engine.angle) < 0.1f)
+    }
+}
+`
+  },
+  {
+    path: 'app/src/main/java/com/screendangle/app/receiver/BootCompletedReceiver.kt',
+    category: 'kotlin_core',
+    content: `package com.screendangle.app.receiver
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import com.screendangle.app.data.preferences.DanglePreferences
+import com.screendangle.app.overlay.OverlayService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+class BootCompletedReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            if (!Settings.canDrawOverlays(context)) {
+                return
+            }
+            val prefs = DanglePreferences(context)
+            CoroutineScope(Dispatchers.Main).launch {
+                val settings = prefs.settingsFlow.first()
+                if (settings.isEnabled) {
+                    OverlayService.start(context)
+                }
+            }
+        }
     }
 }
 `

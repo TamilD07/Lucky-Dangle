@@ -22,6 +22,8 @@ class PendulumPhysicsEngine(
         private set
     var currentLengthPx: Float = naturalLengthPx
         private set
+    val ropeLength: Float
+        get() = currentLengthPx
 
     var isDragging: Boolean = false
         private set
