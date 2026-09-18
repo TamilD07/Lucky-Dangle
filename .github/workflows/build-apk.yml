@@ -57,6 +57,12 @@ jobs:
           unzip -l "$wrapper_jar" | grep "$expected_class"
           ./gradlew --version
 
+      - name: Prepare Android Build Environment
+        working-directory: ./android
+        run: |
+          # Remove local.properties if present so runner uses standard ANDROID_HOME
+          rm -f local.properties
+
       - name: Build Debug APK
         working-directory: ./android
         run: ./gradlew assembleDebug --stacktrace --no-daemon

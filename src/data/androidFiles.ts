@@ -884,5 +884,132 @@ class PendulumPhysicsEngineTest {
     }
 }
 `
+  },
+  {
+    path: 'gradle/wrapper/gradle-wrapper.properties',
+    category: 'config',
+    content: `distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.11.1-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+`
+  },
+  {
+    path: 'app/src/main/res/values/strings.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Screen Dangle</string>
+    <string name="notification_channel_name">Screen Dangle Active</string>
+    <string name="notification_channel_description">Shows status notification when virtual charm overlay is active above apps.</string>
+    <string name="notification_title">Screen Dangle is active</string>
+    <string name="notification_text">Your screen charm is hanging peacefully from the top bezel.</string>
+    <string name="action_turn_off">Turn Off</string>
+    <string name="permission_overlay_explanation">Screen Dangle needs permission to display your selected charm above other apps. It does not read, record, or control the content of other apps.</string>
+</resources>
+`
+  },
+  {
+    path: 'app/src/main/res/values/colors.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#F59E0B</color>
+    <color name="primary_dark">#D97706</color>
+    <color name="background">#0F0F0F</color>
+    <color name="surface">#1A1A1A</color>
+    <color name="text_primary">#F5F5F5</color>
+    <color name="text_secondary">#A3A3A3</color>
+</resources>
+`
+  },
+  {
+    path: 'app/src/main/res/values/themes.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ScreenDangle" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
+`
+  },
+  {
+    path: 'app/src/main/res/drawable/ic_launcher_background.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#171717"
+        android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#262626"
+        android:pathData="M54,18 A36,36 0 1,0 54,90 A36,36 0 1,0 54,18" />
+</vector>
+`
+  },
+  {
+    path: 'app/src/main/res/drawable/ic_launcher_foreground.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,18 L54,42" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M54,42m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+    <path
+        android:fillColor="#1D4ED8"
+        android:pathData="M54,64m-22,0a22,22 0 1,0 44,0a22,22 0 1,0 -44,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,64m-15,0a15,15 0 1,0 30,0a15,15 0 1,0 -30,0" />
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M54,64m-9,0a9,9 0 1,0 18,0a9,9 0 1,0 -18,0" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M54,64m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,62m-1.5,0a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0" />
+</vector>
+`
+  },
+  {
+    path: 'app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+`
+  },
+  {
+    path: 'app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml',
+    category: 'resources',
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+`
   }
 ];
