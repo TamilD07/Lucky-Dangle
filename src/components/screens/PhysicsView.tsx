@@ -7,9 +7,21 @@ import {
   Sparkles,
   Zap,
   Shield,
-  HelpCircle
+  HelpCircle,
+  Activity,
+  Wind
 } from 'lucide-react';
-import { DangleSettings, DEFAULT_PHYSICS, DEFAULT_APPEARANCE } from '../../types';
+import {
+  DangleSettings,
+  DEFAULT_PHYSICS,
+  DEFAULT_APPEARANCE,
+  PHYSICS_PRESETS,
+  CHARM_WEIGHT_MULTIPLIERS,
+  CharmWeightPreset,
+  PhysicsQuality,
+  PhysicsPresetKey
+} from '../../types';
+import { audioSynth } from '../../utils/audioSynth';
 
 interface PhysicsViewProps {
   settings: DangleSettings;
@@ -31,6 +43,7 @@ export const PhysicsView: React.FC<PhysicsViewProps> = ({
       ...prev,
       physics: { ...DEFAULT_PHYSICS },
     }));
+    audioSynth.playSnapSound();
   };
 
   const handleResetAppearance = () => {
@@ -38,6 +51,20 @@ export const PhysicsView: React.FC<PhysicsViewProps> = ({
       ...prev,
       appearance: { ...DEFAULT_APPEARANCE },
     }));
+    audioSynth.playSnapSound();
+  };
+
+  const handleApplyPreset = (presetKey: string) => {
+    const preset = PHYSICS_PRESETS[presetKey as PhysicsPresetKey];
+    if (!preset) return;
+    onUpdateSettings((prev) => ({
+      ...prev,
+      physics: {
+        ...prev.physics,
+        ...preset.config,
+      },
+    }));
+    audioSynth.playSnapSound();
   };
 
   return (
@@ -120,6 +147,62 @@ export const PhysicsView: React.FC<PhysicsViewProps> = ({
       <div className="p-4 space-y-5 max-w-lg mx-auto w-full">
         {activeTab === 'physics' && (
           <>
+            {/* Quick Physics Presets */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-neutral-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <Wind className="w-3.5 h-3.5 text-amber-400" />
+                  Physics Dynamics Presets
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                {Object.values(PHYSICS_PRESETS).map((p) => {
+                  const isActive =
+                    Math.abs(physics.gravity - p.config.gravity) < 0.2 &&
+                    Math.abs(physics.damping - p.config.damping) < 0.01;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handleApplyPreset(p.id)}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        isActive
+                          ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-sm'
+                          : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                      }`}
+                    >
+                      <span className="block text-xs font-semibold">{p.name}</span>
+                      <span className="block text-[10px] text-neutral-500 line-clamp-1">{p.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Simulation Active Toggle */}
+            <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Real-Time Physics Simulation</span>
+                </div>
+                <div className="text-[11px] text-neutral-400">
+                  {physics.simulationActive ? 'Active dynamic pendulum & rope engine' : 'Paused (static charm preview)'}
+                </div>
+              </div>
+
+              <input
+                type="checkbox"
+                checked={physics.simulationActive}
+                onChange={(e) =>
+                  onUpdateSettings((prev) => ({
+                    ...prev,
+                    physics: { ...prev.physics, simulationActive: e.target.checked },
+                  }))
+                }
+                className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+              />
+            </div>
+
             {/* Reduce Motion Toggle */}
             <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 flex items-center justify-between">
               <div>
@@ -143,6 +226,125 @@ export const PhysicsView: React.FC<PhysicsViewProps> = ({
                 }
                 className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
               />
+            </div>
+
+            {/* Cord Flexibility */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-300">Cord Flexibility</span>
+                <span className="text-amber-400 font-mono font-bold">
+                  {physics.cordFlexibility < 0.4 ? 'Rigid Chain' : physics.cordFlexibility > 0.75 ? 'Supple Silk' : 'Braided Cord'} ({(physics.cordFlexibility * 100).toFixed(0)}%)
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                value={physics.cordFlexibility}
+                onChange={(e) =>
+                  onUpdateSettings((prev) => ({
+                    ...prev,
+                    physics: { ...prev.physics, cordFlexibility: parseFloat(e.target.value) },
+                  }))
+                }
+                className="w-full accent-amber-500 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-neutral-500 font-medium">
+                <span>Stiff (Chain)</span>
+                <span>Balanced</span>
+                <span>Fluid (Silk Ribbon)</span>
+              </div>
+            </div>
+
+            {/* Wave Propagation Strength */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-300">Wave & Ripple Propagation</span>
+                <span className="text-amber-400 font-mono font-bold">
+                  {physics.waveStrength === 0 ? 'Disabled' : `${(physics.waveStrength * 100).toFixed(0)}%`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.0"
+                max="1.4"
+                step="0.1"
+                value={physics.waveStrength}
+                onChange={(e) =>
+                  onUpdateSettings((prev) => ({
+                    ...prev,
+                    physics: { ...prev.physics, waveStrength: parseFloat(e.target.value) },
+                  }))
+                }
+                className="w-full accent-amber-500 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-neutral-500 font-medium">
+                <span>None (Straight)</span>
+                <span>Natural ripples</span>
+                <span>Dramatic whip</span>
+              </div>
+            </div>
+
+            {/* Virtual Charm Weight Multiplier */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-300">Global Charm Weight Multiplier</span>
+                <span className="text-amber-400 font-mono font-bold">
+                  {CHARM_WEIGHT_MULTIPLIERS[physics.charmWeight]?.label || 'Medium'}
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5">
+                {(['very_light', 'light', 'medium', 'heavy', 'very_heavy'] as CharmWeightPreset[]).map((wp) => (
+                  <button
+                    key={wp}
+                    onClick={() =>
+                      onUpdateSettings((prev) => ({
+                        ...prev,
+                        physics: { ...prev.physics, charmWeight: wp },
+                      }))
+                    }
+                    className={`p-2 rounded-xl border text-center transition-all ${
+                      physics.charmWeight === wp
+                        ? 'bg-amber-500/20 border-amber-400 text-amber-300 font-bold'
+                        : 'bg-neutral-900 border-white/5 text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="block text-xs capitalize">{wp.replace('_', ' ')}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Simulation Quality / Segments */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-neutral-300">Physics Rope Segments & Quality</span>
+                <span className="text-amber-400 font-mono font-bold uppercase">{physics.quality}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {(['low', 'medium', 'high'] as PhysicsQuality[]).map((q) => (
+                  <button
+                    key={q}
+                    onClick={() =>
+                      onUpdateSettings((prev) => ({
+                        ...prev,
+                        physics: { ...prev.physics, quality: q },
+                      }))
+                    }
+                    className={`py-2 rounded-xl text-xs font-semibold border transition-all text-center ${
+                      physics.quality === q
+                        ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm'
+                        : 'bg-neutral-900 border-white/5 text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="block capitalize">{q}</span>
+                    <span className="block text-[9px] text-neutral-500">
+                      {q === 'low' ? '4 nodes (Battery Saver)' : q === 'medium' ? '6 nodes (Balanced)' : '8 nodes (Cinematic)'}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Swing Intensity */}

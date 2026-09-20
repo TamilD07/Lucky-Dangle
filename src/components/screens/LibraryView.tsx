@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
 import {
   ArrowLeft,
-  Plus,
   Sparkles,
   Check,
   Smile,
-  Type,
   Image as ImageIcon,
   Trash2,
-  Upload,
-  Globe
+  Globe,
+  Link,
+  Scale
 } from 'lucide-react';
-import { CharmItem, CharmCategory } from '../../types';
+import { CharmItem, CharmCategory, CHARM_WEIGHT_MULTIPLIERS } from '../../types';
 import { BUILT_IN_CHARMS } from '../../data/charms';
 import { CharmRenderer } from '../CharmRenderer';
 import { DEFAULT_APPEARANCE } from '../../types';
 import { audioSynth } from '../../utils/audioSynth';
+import { CreateEmojiCharmModal } from './CreateEmojiCharmModal';
+import { CreateImageSigilModal } from './CreateImageSigilModal';
+import { ComponentChainModal } from './ComponentChainModal';
 
 interface LibraryViewProps {
   currentCharmId: string;
   customCharms: CharmItem[];
   onSelectCharm: (charmId: string) => void;
   onAddCustomCharm: (charm: CharmItem) => void;
+  onUpdateCharm?: (charm: CharmItem) => void;
   onDeleteCustomCharm: (charmId: string) => void;
   onBack: () => void;
 }
@@ -31,21 +34,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   customCharms,
   onSelectCharm,
   onAddCustomCharm,
+  onUpdateCharm,
   onDeleteCustomCharm,
   onBack,
 }) => {
   const [activeCategory, setActiveCategory] = useState<CharmCategory | 'all'>('all');
-  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
-
-  // Custom creation tab state
-  const [createType, setCreateType] = useState<'emoji' | 'text' | 'image'>('emoji');
-  const [customEmoji, setCustomEmoji] = useState<string>('🍀');
-  const [customName, setCustomName] = useState<string>('My Lucky Charm');
-  const [customOrigin, setCustomOrigin] = useState<string>('Personal Talisman');
-  const [customText, setCustomText] = useState<string>('LUCKY');
-  const [textColor, setTextColor] = useState<string>('#ffffff');
-  const [accentColor, setAccentColor] = useState<string>('#6366f1');
-  const [customImagePreview, setCustomImagePreview] = useState<string | null>(null);
+  const [showEmojiModal, setShowEmojiModal] = useState<boolean>(false);
+  const [showSigilModal, setShowSigilModal] = useState<boolean>(false);
+  const [chainModalCharm, setChainModalCharm] = useState<CharmItem | null>(null);
 
   const allCharms = [...BUILT_IN_CHARMS, ...customCharms];
 
@@ -70,96 +66,21 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     onSelectCharm(id);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file (PNG, JPG, WebP).');
-      return;
-    }
-
-    if (file.size > 3 * 1024 * 1024) {
-      alert('File size exceeds 3MB. Please choose a smaller photo.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setCustomImagePreview(result);
-    };
-    reader.readAsDataURL(file);
+  const handleSaveCreatedCharm = (charm: CharmItem) => {
+    onAddCustomCharm(charm);
+    onSelectCharm(charm.id);
   };
 
-  const handleSaveCustomCharm = () => {
-    const id = `custom_${Date.now()}`;
-    let newCharm: CharmItem;
-
-    if (createType === 'emoji') {
-      newCharm = {
-        id,
-        name: customName.trim() || 'Emoji Charm',
-        origin: customOrigin.trim() || 'Personal Talisman',
-        category: 'custom',
-        type: 'emoji',
-        iconName: 'Smile',
-        description: 'Custom user-created emoji charm.',
-        ritualText: 'Give it a flick',
-        ritualKind: 'emoji',
-        defaultRopeLength: 130,
-        defaultScale: 1.0,
-        cordColor: '#61451f',
-        emoji: customEmoji,
-        accentColor: '#4f46e5',
-      };
-    } else if (createType === 'text') {
-      newCharm = {
-        id,
-        name: customName.trim() || 'Text Ribbon',
-        origin: customOrigin.trim() || 'Personal Motto',
-        category: 'custom',
-        type: 'text',
-        iconName: 'Type',
-        description: 'Custom typography ribbon talisman.',
-        ritualText: 'Give it a flick',
-        ritualKind: 'flick',
-        defaultRopeLength: 135,
-        defaultScale: 1.0,
-        cordColor: '#61451f',
-        text: customText.toUpperCase(),
-        textColor,
-        accentColor,
-        secondaryColor: '#ffffff',
-      };
+  const handleSaveChain = (updatedCharm: CharmItem) => {
+    if (onUpdateCharm) {
+      onUpdateCharm(updatedCharm);
     } else {
-      if (!customImagePreview) {
-        alert('Please select an image first.');
-        return;
-      }
-      newCharm = {
-        id,
-        name: customName.trim() || 'Photo Amulet',
-        origin: customOrigin.trim() || 'Personal Keepsake',
-        category: 'custom',
-        type: 'image',
-        iconName: 'Image',
-        description: 'Local custom image charm loaded securely via Android Photo Picker.',
-        ritualText: 'Give it a flick',
-        ritualKind: 'flick',
-        defaultRopeLength: 140,
-        defaultScale: 1.0,
-        cordColor: '#61451f',
-        imageUrl: customImagePreview,
-        accentColor: '#10b981',
-      };
+      onAddCustomCharm(updatedCharm);
     }
-
-    audioSynth.playRitualSound('sparkle');
-    onAddCustomCharm(newCharm);
-    onSelectCharm(newCharm.id);
-    setShowCreateModal(false);
+    onSelectCharm(updatedCharm.id);
   };
+
+  const activeCharm = allCharms.find((c) => c.id === currentCharmId) || allCharms[0];
 
   return (
     <div className="flex flex-col h-full bg-neutral-950 text-neutral-100 overflow-y-auto">
@@ -174,19 +95,47 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-base font-bold text-white">Charm Library</h2>
-            <p className="text-[11px] text-neutral-400">Authentic world talismans & custom charms</p>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span>Charm Sanctuary</span>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20">
+                {allCharms.length} Charms
+              </span>
+            </h2>
+            <p className="text-[11px] text-neutral-400">Sacred talismans, emoji charms & custom sigils</p>
           </div>
         </div>
 
-        <button
-          id="open-create-charm-btn"
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-md shadow-indigo-600/20 transition-all active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Charm</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Component Chain / Assembly Studio */}
+          <button
+            onClick={() => setChainModalCharm(activeCharm)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 text-xs font-semibold transition active:scale-95 cursor-pointer"
+            title="Customize top bail ring, beads, and bottom tassel"
+          >
+            <Link className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Chain Assembly</span>
+          </button>
+
+          {/* Emoji Charm Studio */}
+          <button
+            id="open-create-emoji-btn"
+            onClick={() => setShowEmojiModal(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold transition active:scale-95 cursor-pointer"
+          >
+            <Smile className="w-3.5 h-3.5" />
+            <span>+ Emoji</span>
+          </button>
+
+          {/* Image Sigil Studio */}
+          <button
+            id="open-create-sigil-btn"
+            onClick={() => setShowSigilModal(true)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 text-xs font-bold shadow-md shadow-amber-500/20 transition active:scale-95 cursor-pointer"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>+ Image Sigil</span>
+          </button>
+        </div>
       </div>
 
       {/* Categories Horizontal Scroll */}
@@ -195,7 +144,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <button
             key={cat.key}
             onClick={() => setActiveCategory(cat.key)}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
               activeCategory === cat.key
                 ? 'bg-neutral-100 text-neutral-900 font-semibold shadow-sm'
                 : 'bg-neutral-900/80 text-neutral-400 hover:text-neutral-200'
@@ -207,24 +156,28 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       </div>
 
       {/* Grid of Charms */}
-      <div className="p-4 grid grid-cols-2 gap-3 pb-8">
+      <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pb-8">
         {filteredCharms.map((charm) => {
           const isSelected = charm.id === currentCharmId;
+          const weightLabel =
+            charm.weightPreset && CHARM_WEIGHT_MULTIPLIERS[charm.weightPreset]
+              ? CHARM_WEIGHT_MULTIPLIERS[charm.weightPreset].label
+              : 'Medium';
 
           return (
             <div
               key={charm.id}
               id={`charm-card-${charm.id}`}
               onClick={() => handleSelectCharmItem(charm.id)}
-              className={`p-3 rounded-2xl border flex flex-col items-center justify-between text-center cursor-pointer transition-all relative group min-h-[170px] ${
+              className={`p-3.5 rounded-2xl border flex flex-col items-center justify-between text-center cursor-pointer transition-all relative group min-h-[190px] ${
                 isSelected
-                  ? 'bg-gradient-to-b from-neutral-900 to-neutral-900/90 border-indigo-500 shadow-md shadow-indigo-500/10 ring-2 ring-indigo-500/40'
+                  ? 'bg-gradient-to-b from-neutral-900 to-neutral-900/90 border-amber-500 shadow-lg shadow-amber-500/10 ring-2 ring-amber-500/40'
                   : 'bg-neutral-900/40 border-white/5 hover:border-white/20 hover:bg-neutral-900/80'
               }`}
             >
               {/* Selected Badge */}
               {isSelected && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow">
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 text-neutral-950 flex items-center justify-center shadow font-bold">
                   <Check className="w-3 h-3 stroke-[3]" />
                 </div>
               )}
@@ -243,8 +196,20 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </button>
               )}
 
+              {/* Chain Customize Quick Action Icon */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setChainModalCharm(charm);
+                }}
+                className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-neutral-950/80 text-neutral-400 hover:text-amber-300 hover:bg-neutral-800 border border-neutral-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Customize chain beads & bottom tassel"
+              >
+                <Link className="w-3 h-3" />
+              </button>
+
               {/* Visual Charm Graphic Container */}
-              <div className="w-18 h-18 my-1 flex items-center justify-center">
+              <div className="w-20 h-20 my-1 flex items-center justify-center">
                 <CharmRenderer
                   charm={charm}
                   angle={0}
@@ -259,8 +224,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   <Globe className="w-2.5 h-2.5" />
                   <span className="truncate">{charm.origin}</span>
                 </div>
-                <div className="text-[9px] text-neutral-400 truncate">
-                  {charm.ritualText}
+
+                {/* Weight & Type Indicator Badges */}
+                <div className="flex items-center justify-center gap-1 pt-0.5">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono flex items-center gap-0.5">
+                    <Scale className="w-2.5 h-2.5 text-neutral-500" />
+                    {weightLabel}
+                  </span>
+                  {charm.componentChain?.finalDangle && charm.componentChain.finalDangle.type !== 'none' && (
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-300">
+                      +{charm.componentChain.finalDangle.type}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -268,184 +243,28 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         })}
       </div>
 
-      {/* Modal for Creating Custom Charm */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-white/10 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span>Create Custom Charm</span>
-              </h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-neutral-400 hover:text-white text-xs font-bold"
-              >
-                ✕
-              </button>
-            </div>
+      {/* Emoji Charm Modal */}
+      <CreateEmojiCharmModal
+        isOpen={showEmojiModal}
+        onClose={() => setShowEmojiModal(false)}
+        onSave={handleSaveCreatedCharm}
+      />
 
-            {/* Type selector */}
-            <div className="grid grid-cols-3 gap-2 p-1 bg-neutral-950 rounded-xl border border-white/5">
-              <button
-                onClick={() => setCreateType('emoji')}
-                className={`py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                  createType === 'emoji' ? 'bg-indigo-600 text-white' : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <Smile className="w-3.5 h-3.5" />
-                <span>Emoji</span>
-              </button>
-              <button
-                onClick={() => setCreateType('text')}
-                className={`py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                  createType === 'text' ? 'bg-indigo-600 text-white' : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <Type className="w-3.5 h-3.5" />
-                <span>Text</span>
-              </button>
-              <button
-                onClick={() => setCreateType('image')}
-                className={`py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                  createType === 'image' ? 'bg-indigo-600 text-white' : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Photo</span>
-              </button>
-            </div>
+      {/* Image Sigil Charm Modal */}
+      <CreateImageSigilModal
+        isOpen={showSigilModal}
+        onClose={() => setShowSigilModal(false)}
+        onSave={handleSaveCreatedCharm}
+      />
 
-            {/* Charm Name */}
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-400 block mb-1">Charm Name</label>
-              <input
-                type="text"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                placeholder="e.g. My Lucky Tag"
-                className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-xs text-white placeholder:text-neutral-600 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Charm Origin */}
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-400 block mb-1">Origin / Lore</label>
-              <input
-                type="text"
-                value={customOrigin}
-                onChange={(e) => setCustomOrigin(e.target.value)}
-                placeholder="e.g. Personal Talisman"
-                className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-xs text-white placeholder:text-neutral-600 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Emoji Type Details */}
-            {createType === 'emoji' && (
-              <div className="space-y-2">
-                <label className="text-[11px] font-semibold text-neutral-400 block">Pick or Enter Emoji</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customEmoji}
-                    onChange={(e) => setCustomEmoji(e.target.value)}
-                    maxLength={3}
-                    className="w-14 h-11 text-center text-xl rounded-xl bg-neutral-950 border border-white/10 text-white focus:outline-none focus:border-indigo-500"
-                  />
-                  <div className="flex flex-wrap gap-1.5">
-                    {['🍀', '🌟', '🧿', '🦊', '🪐', '🧁', '🎀', '💎'].map((em) => (
-                      <button
-                        key={em}
-                        onClick={() => setCustomEmoji(em)}
-                        className="w-8 h-8 rounded-lg bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-base"
-                      >
-                        {em}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Text Type Details */}
-            {createType === 'text' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-neutral-400 block mb-1">Text Word (up to 8 chars)</label>
-                  <input
-                    type="text"
-                    value={customText}
-                    onChange={(e) => setCustomText(e.target.value.slice(0, 8))}
-                    maxLength={8}
-                    className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-xs text-white uppercase tracking-wider font-bold focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <label className="text-[11px] font-semibold text-neutral-400 block mb-1">Badge Color</label>
-                    <input
-                      type="color"
-                      value={accentColor}
-                      onChange={(e) => setAccentColor(e.target.value)}
-                      className="w-full h-8 rounded-lg bg-neutral-950 border border-white/10 cursor-pointer"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-[11px] font-semibold text-neutral-400 block mb-1">Text Color</label>
-                    <input
-                      type="color"
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      className="w-full h-8 rounded-lg bg-neutral-950 border border-white/10 cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Photo Type Details */}
-            {createType === 'image' && (
-              <div className="space-y-2">
-                <label className="text-[11px] font-semibold text-neutral-400 block">Select Image (Photo Picker)</label>
-                <div className="p-4 rounded-xl border-2 border-dashed border-white/10 hover:border-indigo-500/50 flex flex-col items-center justify-center cursor-pointer transition-colors relative bg-neutral-950">
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={handleImageUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  {customImagePreview ? (
-                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/20">
-                      <img src={customImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="w-6 h-6 text-neutral-500 mb-1" />
-                      <div className="text-xs text-neutral-300 font-medium">Tap to choose photo</div>
-                      <div className="text-[10px] text-neutral-500">Processed locally on device only</div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-neutral-400 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveCustomCharm}
-                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-md shadow-indigo-600/20"
-              >
-                Save & Use
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Universal Component Chain Modal */}
+      {chainModalCharm && (
+        <ComponentChainModal
+          isOpen={!!chainModalCharm}
+          charm={chainModalCharm}
+          onClose={() => setChainModalCharm(null)}
+          onSave={handleSaveChain}
+        />
       )}
     </div>
   );

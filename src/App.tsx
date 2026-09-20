@@ -197,6 +197,20 @@ export default function App() {
     setActiveTab('talisman');
   };
 
+  const handleUpdateCharm = (updatedCharm: CharmItem) => {
+    setSettings((prev) => {
+      const existsInCustom = prev.customCharms.some((c) => c.id === updatedCharm.id);
+      const newCustom = existsInCustom
+        ? prev.customCharms.map((c) => (c.id === updatedCharm.id ? updatedCharm : c))
+        : [updatedCharm, ...prev.customCharms];
+      return {
+        ...prev,
+        customCharms: newCustom,
+        selectedCharmId: updatedCharm.id,
+      };
+    });
+  };
+
   const handleDeleteCustomCharm = (charmId: string) => {
     setSettings((prev) => {
       const remaining = prev.customCharms.filter((c) => c.id !== charmId);
@@ -425,6 +439,7 @@ export default function App() {
                 setActiveTab('talisman');
               }}
               onAddCustomCharm={handleAddCustomCharm}
+              onUpdateCharm={handleUpdateCharm}
               onDeleteCustomCharm={handleDeleteCustomCharm}
               onBack={() => setActiveTab('talisman')}
             />
