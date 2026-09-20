@@ -599,14 +599,15 @@ fun CreateCustomCharmDialog(
                             if (mode == 0) "Custom $activeEmoji" else "Sigil $customText"
                         }
                         val componentChain = if (selectedDangleType != "none") {
-                            ChainComponent(
-                                connector = ChainConnector(type = "ring", colorHex = "#D4AF37", sizeDp = 6f),
+                            ComponentChainConfig(
+                                connector = ChainConnector(type = "jump_ring", material = "gold", colorHex = "#D4AF37"),
                                 afterComponents = listOf(
-                                    CharmBead(id = "sub_bead", colorHex = "#DC2626", radiusDp = 3.5f, offsetDp = 8f)
+                                    CharmBead(type = "sub_bead", colorHex = "#DC2626", radiusDp = 3.5f, offsetDp = 8f)
                                 ),
                                 finalDangle = ChainFinalDangle(
                                     type = selectedDangleType,
                                     colorHex = if (selectedDangleType == "bell") "#D4AF37" else "#DC2626",
+                                    sizeDp = 22f,
                                     lengthDp = 22f
                                 )
                             )
