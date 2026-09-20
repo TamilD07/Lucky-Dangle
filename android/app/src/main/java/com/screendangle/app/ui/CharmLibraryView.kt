@@ -6,22 +6,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -30,10 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.screendangle.app.data.model.Charm
-import com.screendangle.app.data.model.CharmCatalog
-import com.screendangle.app.data.model.CharmCategory
-import com.screendangle.app.data.model.CharmType
+import com.screendangle.app.data.model.*
 import java.util.UUID
 
 @Composable
@@ -50,7 +50,6 @@ fun CharmLibraryView(
 
     var selectedCategory by remember { mutableStateOf<CharmCategory?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
-    var viewingCharmDetail by remember { mutableStateOf<Charm?>(null) }
 
     val filteredCharms = remember(allCharms, selectedCategory) {
         if (selectedCategory == null) allCharms
@@ -79,7 +78,7 @@ fun CharmLibraryView(
                     color = Color.White
                 )
                 Text(
-                    text = "${allCharms.size} charms available",
+                    text = "${allCharms.size} charms ready for hanging",
                     fontSize = 12.sp,
                     color = Color(0xFF9CA3AF)
                 )
@@ -100,7 +99,7 @@ fun CharmLibraryView(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Custom Charm", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text("Craft Charm", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -178,24 +177,22 @@ fun CharmLibraryView(
                                 CharmType.EMOJI -> {
                                     Text(
                                         text = charm.emoji ?: "🧿",
-                                        fontSize = 30.sp
+                                        fontSize = 32.sp
                                     )
                                 }
                                 CharmType.TEXT -> {
                                     Box(
                                         modifier = Modifier
-                                            .size(46.dp)
+                                            .size(44.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFF4F46E5))
-                                            .border(1.5.dp, amber, CircleShape),
+                                            .background(Color(0xFF4F46E5)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = charm.text ?: "LUCK",
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp,
-                                            textAlign = TextAlign.Center
+                                            fontSize = 11.sp
                                         )
                                     }
                                 }
@@ -204,7 +201,9 @@ fun CharmLibraryView(
                                         Image(
                                             painter = painterResource(id = resId),
                                             contentDescription = charm.name,
-                                            modifier = Modifier.size(46.dp),
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape),
                                             contentScale = ContentScale.Fit
                                         )
                                     }
@@ -216,40 +215,39 @@ fun CharmLibraryView(
 
                         Text(
                             text = charm.name,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
-                            maxLines = 1,
-                            textAlign = TextAlign.Center
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) amber else Color.White,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
                         )
 
                         Text(
                             text = charm.origin,
                             fontSize = 10.sp,
-                            color = amber,
-                            maxLines = 1,
-                            textAlign = TextAlign.Center
+                            color = Color(0xFF9CA3AF),
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
+                        // Bottom action / badges
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (isSelected) {
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = amber.copy(alpha = 0.25f)
-                                ) {
-                                    Text(
-                                        text = "Active",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = amber,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                    )
-                                }
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color(0xFF262C36)
+                            ) {
+                                Text(
+                                    text = charm.category.name.take(4),
+                                    fontSize = 8.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                )
                             }
 
                             if (charm.category == CharmCategory.CUSTOM) {
@@ -289,75 +287,75 @@ fun CreateCustomCharmDialog(
     onDismiss: () -> Unit,
     onSave: (Charm) -> Unit
 ) {
-    var isEmojiMode by remember { mutableStateOf(true) }
+    var mode by remember { mutableStateOf(0) } // 0: Emoji, 1: Sigil / Text, 2: Image
     var selectedEmoji by remember { mutableStateOf("🧿") }
-    var customText by remember { mutableStateOf("ZEN") }
+    var customEmojiInput by remember { mutableStateOf("") }
+    var customText by remember { mutableStateOf("PEACE") }
     var charmName by remember { mutableStateOf("") }
     var charmDescription by remember { mutableStateOf("") }
+    var selectedMaterial by remember { mutableStateOf(EmojiMaterialStyle.GOLD) }
+    var selectedShape by remember { mutableStateOf(CharmContainerShape.CIRCLE) }
+    var selectedDangleType by remember { mutableStateOf("tassel") } // "tassel", "bell", "crystal", "coin", "none"
     var selectedCordColor by remember { mutableStateOf("#D4AF37") }
 
     val amber = Color(0xFFF59E0B)
     val darkCard = Color(0xFF181C22)
 
-    val popularEmojis = listOf("🧿", "🌸", "🍀", "🐱", "💎", "🌙", "⛩️", "🔔", "🎋", "🦊", "🌟", "🪷", "🧧", "✨")
-    val cordColors = listOf("#D4AF37", "#DC2626", "#1E293B", "#D97706", "#2563EB", "#9333EA")
+    val popularEmojis = listOf("🧿", "🌸", "🍀", "🐱", "💎", "🌙", "⛩️", "🔔", "🎋", "🦊", "🌟", "🪷", "🧧", "✨", "🐉", "☯️", "🕊️", "🦁")
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = darkCard),
             border = BorderStroke(1.dp, Color(0xFF374151)),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.9f)
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .fillMaxSize()
+                    .padding(18.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Craft Custom Charm",
-                        fontSize = 18.sp,
+                        text = "Craft Custom Talisman",
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color(0xFF9CA3AF)
-                        )
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = Color(0xFF9CA3AF))
                     }
                 }
 
-                // Type selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                // Mode Tabs (Emoji / Sigil)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        onClick = { isEmojiMode = true },
+                        onClick = { mode = 0 },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isEmojiMode) amber else Color(0xFF262C36),
-                            contentColor = if (isEmojiMode) Color(0xFF18181B) else Color.White
+                            containerColor = if (mode == 0) amber else Color(0xFF262C36),
+                            contentColor = if (mode == 0) Color(0xFF18181B) else Color.White
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Emoji Icon", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Any Emoji", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     Button(
-                        onClick = { isEmojiMode = false },
+                        onClick = { mode = 1 },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (!isEmojiMode) amber else Color(0xFF262C36),
-                            contentColor = if (!isEmojiMode) Color(0xFF18181B) else Color.White
+                            containerColor = if (mode == 1) amber else Color(0xFF262C36),
+                            contentColor = if (mode == 1) Color(0xFF18181B) else Color.White
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
@@ -365,74 +363,176 @@ fun CreateCustomCharmDialog(
                     }
                 }
 
-                // Visual Preview Box
+                // Live Preview Canvas Box
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(90.dp)
+                        .height(110.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color(0xFF0F1217)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isEmojiMode) {
-                        Text(text = selectedEmoji, fontSize = 44.sp)
-                    } else {
+                    val activeEmoji = if (customEmojiInput.isNotBlank()) customEmojiInput else selectedEmoji
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        // Container shape simulation
                         Box(
                             modifier = Modifier
-                                .size(58.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF4F46E5))
-                                .border(2.dp, amber, CircleShape),
+                                .size(64.dp)
+                                .clip(
+                                    when (selectedShape) {
+                                        CharmContainerShape.ROUNDED_RECT -> RoundedCornerShape(12.dp)
+                                        CharmContainerShape.OCTAGON -> RoundedCornerShape(18.dp)
+                                        else -> CircleShape
+                                    }
+                                )
+                                .background(
+                                    when (selectedMaterial) {
+                                        EmojiMaterialStyle.GOLD -> Brush.radialGradient(listOf(Color(0xFFFDE047), Color(0xFFD4AF37), Color(0xFF78350F)))
+                                        EmojiMaterialStyle.SILVER -> Brush.radialGradient(listOf(Color(0xFFFFFFFF), Color(0xFF94A3B8), Color(0xFF475569)))
+                                        EmojiMaterialStyle.NEON -> Brush.linearGradient(listOf(Color(0xFF06B6D4), Color(0xFF3B82F6)))
+                                        EmojiMaterialStyle.SEAL -> Brush.linearGradient(listOf(Color(0xFFDC2626), Color(0xFF7F1D1D)))
+                                        else -> Brush.linearGradient(listOf(Color(0xFF374151), Color(0xFF1F2937)))
+                                    }
+                                )
+                                .border(
+                                    2.dp,
+                                    if (selectedMaterial == EmojiMaterialStyle.GOLD) Color(0xFFFEF08A) else Color(0xFFE2E8F0),
+                                    CircleShape
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
+                            if (mode == 0) {
+                                Text(text = activeEmoji, fontSize = 34.sp)
+                            } else {
+                                Text(
+                                    text = customText.ifBlank { "PEACE" },
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+
+                        if (selectedDangleType != "none") {
                             Text(
-                                text = customText.ifBlank { "SIGIL" },
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center
+                                text = when (selectedDangleType) {
+                                    "tassel" -> "🔻 Silk Tassel"
+                                    "bell" -> "🔔 Temple Bell"
+                                    "crystal" -> "💎 Crystal"
+                                    else -> "🪙 Golden Coin"
+                                },
+                                fontSize = 10.sp,
+                                color = amber,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
                 }
 
-                if (isEmojiMode) {
-                    Text("Select Emoji Talisman", fontSize = 12.sp, color = Color(0xFFD1D5DB))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                if (mode == 0) {
+                    // Type any custom emoji
+                    OutlinedTextField(
+                        value = customEmojiInput,
+                        onValueChange = { customEmojiInput = it },
+                        label = { Text("Type ANY Emoji (from keyboard)") },
+                        placeholder = { Text("e.g. 🐉, 🧿, 🪷, 🔮, ⚡") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = amber,
+                            unfocusedBorderColor = Color(0xFF374151)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Emoji Palette
+                    Text("Or Choose Quick Talisman", fontSize = 11.sp, color = Color(0xFF9CA3AF))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        popularEmojis.take(7).forEach { emoji ->
-                            Text(
-                                text = emoji,
-                                fontSize = 22.sp,
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .clickable { selectedEmoji = emoji }
-                                    .padding(4.dp)
-                            )
+                        items(popularEmojis) { emoji ->
+                            Surface(
+                                shape = CircleShape,
+                                color = if (selectedEmoji == emoji && customEmojiInput.isBlank()) amber.copy(alpha = 0.3f) else Color(0xFF262C36),
+                                border = BorderStroke(1.dp, if (selectedEmoji == emoji) amber else Color.Transparent),
+                                modifier = Modifier.clickable {
+                                    selectedEmoji = emoji
+                                    customEmojiInput = ""
+                                }
+                            ) {
+                                Text(
+                                    text = emoji,
+                                    fontSize = 22.sp,
+                                    modifier = Modifier.padding(6.dp)
+                                )
+                            }
                         }
                     }
+
+                    // Material Finish Selector
+                    Text("Medallion Material Finish", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        popularEmojis.drop(7).forEach { emoji ->
-                            Text(
-                                text = emoji,
-                                fontSize = 22.sp,
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .clickable { selectedEmoji = emoji }
-                                    .padding(4.dp)
-                            )
+                        val materials = listOf(
+                            EmojiMaterialStyle.GOLD to "Gold",
+                            EmojiMaterialStyle.SILVER to "Silver",
+                            EmojiMaterialStyle.NEON to "Neon",
+                            EmojiMaterialStyle.SEAL to "Seal"
+                        )
+                        materials.forEach { (mat, label) ->
+                            val isSel = selectedMaterial == mat
+                            Button(
+                                onClick = { selectedMaterial = mat },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSel) amber else Color(0xFF262C36),
+                                    contentColor = if (isSel) Color(0xFF18181B) else Color.White
+                                ),
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(2.dp)
+                            ) {
+                                Text(label, fontSize = 11.sp)
+                            }
+                        }
+                    }
+
+                    // Shape Selector
+                    Text("Container Geometry", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val shapes = listOf(
+                            CharmContainerShape.CIRCLE to "Circle",
+                            CharmContainerShape.ROUNDED_RECT to "Plaque",
+                            CharmContainerShape.OCTAGON to "Octagon"
+                        )
+                        shapes.forEach { (sh, label) ->
+                            val isSel = selectedShape == sh
+                            Button(
+                                onClick = { selectedShape = sh },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSel) amber else Color(0xFF262C36),
+                                    contentColor = if (isSel) Color(0xFF18181B) else Color.White
+                                ),
+                                shape = RoundedCornerShape(6.dp),
+                                contentPadding = PaddingValues(2.dp)
+                            ) {
+                                Text(label, fontSize = 11.sp)
+                            }
                         }
                     }
                 } else {
                     OutlinedTextField(
                         value = customText,
-                        onValueChange = { if (it.length <= 6) customText = it.uppercase() },
-                        label = { Text("Sigil Text (Max 6 letters)") },
+                        onValueChange = { if (it.length <= 8) customText = it.uppercase() },
+                        label = { Text("Sigil Inscription (Max 8 letters)") },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
@@ -444,11 +544,43 @@ fun CreateCustomCharmDialog(
                     )
                 }
 
+                // Bottom Final Dangle Selector
+                Text("Bottom Accent Chain", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val dangles = listOf(
+                        "tassel" to "Tassel",
+                        "bell" to "Bell",
+                        "crystal" to "Crystal",
+                        "none" to "None"
+                    )
+                    dangles.forEach { (dtype, label) ->
+                        val isSel = selectedDangleType == dtype
+                        Button(
+                            onClick = { selectedDangleType = dtype },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isSel) amber else Color(0xFF262C36),
+                                contentColor = if (isSel) Color(0xFF18181B) else Color.White
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(2.dp)
+                        ) {
+                            Text(label, fontSize = 11.sp)
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = charmName,
                     onValueChange = { charmName = it },
-                    label = { Text("Charm Name") },
-                    placeholder = { Text(if (isEmojiMode) "e.g. Mystic Eye" else "e.g. Zen Sigil") },
+                    label = { Text("Talisman Name") },
+                    placeholder = {
+                        val activeEmoji = if (customEmojiInput.isNotBlank()) customEmojiInput else selectedEmoji
+                        Text(if (mode == 0) "e.g. Celestial $activeEmoji" else "e.g. Mystic $customText")
+                    },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -462,23 +594,41 @@ fun CreateCustomCharmDialog(
                 // Save Action
                 Button(
                     onClick = {
+                        val activeEmoji = if (customEmojiInput.isNotBlank()) customEmojiInput else selectedEmoji
                         val name = charmName.ifBlank {
-                            if (isEmojiMode) "Custom $selectedEmoji" else "Sigil $customText"
+                            if (mode == 0) "Custom $activeEmoji" else "Sigil $customText"
                         }
+                        val componentChain = if (selectedDangleType != "none") {
+                            ChainComponent(
+                                connector = ChainConnector(type = "ring", colorHex = "#D4AF37", sizeDp = 6f),
+                                afterComponents = listOf(
+                                    CharmBead(id = "sub_bead", colorHex = "#DC2626", radiusDp = 3.5f, offsetDp = 8f)
+                                ),
+                                finalDangle = ChainFinalDangle(
+                                    type = selectedDangleType,
+                                    colorHex = if (selectedDangleType == "bell") "#D4AF37" else "#DC2626",
+                                    lengthDp = 22f
+                                )
+                            )
+                        } else null
+
                         val charm = Charm(
                             id = "custom_${UUID.randomUUID().toString().take(8)}",
                             name = name,
                             origin = "Handcrafted",
                             category = CharmCategory.CUSTOM,
-                            type = if (isEmojiMode) CharmType.EMOJI else CharmType.TEXT,
+                            type = if (mode == 0) CharmType.EMOJI else CharmType.TEXT,
                             description = charmDescription.ifBlank { "Personal handcrafted talisman" },
                             ritualText = "Touch to invoke blessings",
                             ritualKind = "custom",
                             cordColorHex = selectedCordColor,
-                            emoji = if (isEmojiMode) selectedEmoji else null,
-                            text = if (!isEmojiMode) customText else null,
+                            emoji = if (mode == 0) activeEmoji else null,
+                            text = if (mode == 1) customText else null,
                             accentColorHex = "#4F46E5",
-                            secondaryColorHex = "#FBBF24"
+                            secondaryColorHex = "#FBBF24",
+                            emojiMaterial = selectedMaterial,
+                            containerShape = selectedShape,
+                            componentChain = componentChain
                         )
                         onSave(charm)
                     },

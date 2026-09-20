@@ -597,13 +597,19 @@ fun ScreenDangleScreen(
                         onUpdateGravity = { g -> scope.launch { preferences.setGravity(g) } },
                         onUpdateDamping = { d -> scope.launch { preferences.setDamping(d) } },
                         onUpdateStiffness = { s -> scope.launch { preferences.setStiffness(s) } },
+                        onUpdateCordFlexibility = { f -> scope.launch { preferences.setCordFlexibility(f) } },
+                        onUpdateWaveStrength = { w -> scope.launch { preferences.setWaveStrength(w) } },
+                        onUpdateCharmWeight = { c -> scope.launch { preferences.setCharmWeight(c) } },
                         onUpdateSwingIntensity = { i -> scope.launch { preferences.setSwingIntensity(i) } },
                         onUpdateReduceMotion = { r -> scope.launch { preferences.setReduceMotion(r) } },
-                        onApplyPreset = { g, d, s ->
+                        onApplyPreset = { preset ->
                             scope.launch {
-                                preferences.setGravity(g)
-                                preferences.setDamping(d)
-                                preferences.setStiffness(s)
+                                preferences.setGravity(preset.gravity)
+                                preferences.setDamping(preset.damping)
+                                preferences.setStiffness(preset.stiffness)
+                                preferences.setCordFlexibility(preset.cordFlexibility)
+                                preferences.setWaveStrength(preset.waveStrength)
+                                preferences.setCharmWeight(preset.charmWeight)
                             }
                         }
                     )

@@ -27,6 +27,9 @@ class DanglePreferences(private val context: Context) {
         val GRAVITY = floatPreferencesKey("gravity")
         val DAMPING = floatPreferencesKey("damping")
         val STIFFNESS = floatPreferencesKey("stiffness")
+        val CORD_FLEXIBILITY = floatPreferencesKey("cord_flexibility")
+        val WAVE_STRENGTH = floatPreferencesKey("wave_strength")
+        val CHARM_WEIGHT = stringPreferencesKey("charm_weight")
         val CUSTOM_CHARMS_JSON = stringPreferencesKey("custom_charms_json")
     }
 
@@ -46,6 +49,9 @@ class DanglePreferences(private val context: Context) {
             gravity = prefs[GRAVITY] ?: 9.8f,
             damping = prefs[DAMPING] ?: 0.982f,
             stiffness = prefs[STIFFNESS] ?: 0.15f,
+            cordFlexibility = prefs[CORD_FLEXIBILITY] ?: 0.7f,
+            waveStrength = prefs[WAVE_STRENGTH] ?: 1.0f,
+            charmWeight = prefs[CHARM_WEIGHT] ?: "medium",
             customCharmsJson = prefs[CUSTOM_CHARMS_JSON] ?: ""
         )
     }
@@ -104,6 +110,18 @@ class DanglePreferences(private val context: Context) {
 
     suspend fun setStiffness(stiffness: Float) {
         context.dataStore.edit { it[STIFFNESS] = stiffness }
+    }
+
+    suspend fun setCordFlexibility(flexibility: Float) {
+        context.dataStore.edit { it[CORD_FLEXIBILITY] = flexibility }
+    }
+
+    suspend fun setWaveStrength(strength: Float) {
+        context.dataStore.edit { it[WAVE_STRENGTH] = strength }
+    }
+
+    suspend fun setCharmWeight(weight: String) {
+        context.dataStore.edit { it[CHARM_WEIGHT] = weight }
     }
 
     suspend fun setCustomCharmsJson(json: String) {
